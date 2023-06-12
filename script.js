@@ -3,12 +3,17 @@ const express = require('express'),
   fs = require('fs'),
   shell = require('shelljs'),
 
+
+
    // Modify the folder path in which responses need to be stored
   folderPath = './Responses/',
-  defaultFileExtension = 'json', // Change the default file extension
+  defaultFileExtension = 'csv', // Change the default file extension
   bodyParser = require('body-parser'),
   DEFAULT_MODE = 'writeFile',
   path = require('path');
+
+const converter = require('json-2-csv');
+
 
 // Create the folder path in case it doesn't exist
 shell.mkdir('-p', folderPath);
@@ -26,17 +31,22 @@ app.post('/write', (req, res) => {
     filename = `${req.body.requestName}${uniqueIdentifier || ''}`,
     filePath = `${path.join(folderPath, filename)}.${extension}`,
     options = req.body.options || undefined;
-
-  fs[fsMode](filePath, req.body.responseData, options, (err) => {
+  const data = JSON.parse(req.body.responseData);
+  // convert JSON array to CSV string
+  converter.json2csv(data, (err, csv) => {
     if (err) {
       console.log(err);
-      res.send('Error');
+
     }
     else {
       res.send('Success');
+      let prefix="sections-";
+      let time = Date.now();
+      fs.writeFileSync(`${prefix} + ${time}.csv`, csv);
     }
   });
 });
+
 
 app.listen(3000, () => {
   console.log('ResponsesToFile App is listening now! Send them requests my way!');
